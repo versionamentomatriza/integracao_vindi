@@ -1,0 +1,127 @@
+# =========================================
+# DEPENDÊNCIAS
+# =========================================
+# PHP (Composer)
+vendor/
+composer.lock
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# =========================================
+# AMBIENTE & CREDENCIAIS
+# =========================================
+.env
+.env.*
+!.env.example
+auth.json
+
+# =========================================
+# CACHE & ARQUIVOS GERADOS PELO LARAVEL
+# =========================================
+/public/storage
+/public/hot
+/public/build
+/public/vendor
+mix-manifest.json
+
+/storage/*.key
+/storage/app/*
+!/storage/app/public
+/storage/debugbar/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/logs/.gitignore
+
+bootstrap/cache/*.php
+
+# =========================================
+# BANCO DE DADOS LOCAL
+# =========================================
+/database/*.sqlite
+
+# =========================================
+# SISTEMA & TEMPORÁRIOS
+# =========================================
+__MACOSX/
+*.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+*.stackdump
+*.swp
+*.tmp
+*.temp
+*.log
+*.pem
+
+# =========================================
+# PASTAS ESPECÍFICAS DO PROJETO
+# =========================================
+public/boletos/
+public/boletos_pdf/
+public/danfce/
+public/dacte_cancelamento/
+public/dacte_temp/
+public/dacte/
+public/mp_old/
+public/remessas_boleto/
+public/zips/
+public/xml_cte/
+public/xml_dfe/
+public/xml_entrada/
+public/xml_mdfe/
+public/xml_nfe_cancelada/
+public/xml_nfe_correcao/
+public/xml_nota_servico/
+public/uploads/
+public/uploads/ticket/
+public/uploads/carrossel/
+
+# Arquivos de teste temporários
+public/teste.php
+public/teste_favoritos.html
+public/teste_rafa/
+
+# Arquivos estáticos não essenciais
+public/tinymce/langs/pt_BR.js
+resources/views/auth/register.blade.php
+
+# Pastas de testes e não usadas em produção
+public/dia_especial/
+public/bs5-tour/
+
+# =========================================
+# CONFIGURAÇÕES LOCAIS & IDEs
+# =========================================
+# PhpStorm / JetBrains
+.idea/
+*.iml
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Fleet
+.fleet/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# NetBeans
+/nbproject/private/
+
+# Homestead
+Homestead.json
+Homestead.yaml
