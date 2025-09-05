@@ -41,12 +41,7 @@ class Erp
         ];
     }
 
-    public static function getPlanDiscounts($planoId, $empresaId)
-    {
-        return [];
-    }
-
-    public static function updatePlan($idEmpresa, $idPlano)
+    public static function updatePlan($idEmpresa, $idPlano, $metodo_pgto)
     {
         try {
             $empresa = Empresa::findOrFail($idEmpresa);
@@ -85,10 +80,11 @@ class Erp
                 $expiracao = now()->addDays($intervaloDias);
 
                 PlanoEmpresa::create([
-                    'empresa_id'     => $empresa->id,
-                    'plano_id'       => $plano->id,
-                    'data_expiracao' => $expiracao,
-                    'valor'          => $plano->valor ?? 0,
+                    'empresa_id'        => $empresa->id,
+                    'plano_id'          => $plano->id,
+                    'data_expiracao'    => $expiracao,
+                    'valor'             => $plano->valor ?? 0,
+                    'forma_pagamento'   => $metodo_pgto
                 ]);
                 return;
             }
@@ -110,10 +106,11 @@ class Erp
             }
 
             $planoEmpresa->update([
-                'empresa_id'     => $empresa->id,
-                'plano_id'       => $plano->id,
-                'data_expiracao' => $expiracao,
-                'valor'          => $plano->valor ?? 0,
+                'empresa_id'        => $empresa->id,
+                'plano_id'          => $plano->id,
+                'data_expiracao'    => $expiracao,
+                'valor'             => $plano->valor ?? 0,
+                'forma_pagamento'   => $metodo_pgto
             ]);
         } catch (\Throwable $th) {
             Log::channel('requests')->info('ERRO:' . $th->getMessage());

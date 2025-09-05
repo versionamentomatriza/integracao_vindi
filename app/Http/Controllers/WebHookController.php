@@ -21,11 +21,15 @@ class WebHookController extends Controller
             $bill     = $event['data']['bill'] ?? null;
             $plan     = $bill['subscription']['plan'] ?? null;
             $customer = $bill['customer'] ?? null;
+            $paymentMethod = $bill['charges'][0]['payment_method']['name']
+                ?? $bill['charges'][0]['last_transaction']['gateway_response_fields']['payment_method_name']
+                ?? 'Desconhecido';
 
             if ($plan && $customer) {
                 Erp::updatePlan(
-                    (int) $customer['code'],  // código do cliente
-                    (int) $plan['code']       // código do plano
+                    (int) $customer['code'],
+                    (int) $plan['code'],
+                    $paymentMethod
                 );
             }
         }

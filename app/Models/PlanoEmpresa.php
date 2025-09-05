@@ -13,5 +13,6 @@ class PlanoEmpresa extends Model
         'plano_id',
         'data_expiracao',
         'valor',
+        'forma_pagamento',
     ];
 }
