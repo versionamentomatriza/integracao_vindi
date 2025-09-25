@@ -51,6 +51,7 @@ class Erp
                 ->orderByDesc('id')
                 ->first();
 
+            // Mapeamento de dias por plano
             $dias = [
                 1  => 15,
                 2  => 30,
@@ -94,8 +95,10 @@ class Erp
                 $expiracaoAtual = Carbon::parse($planoEmpresa->data_expiracao);
 
                 if ($expiracaoAtual->isFuture()) {
-                    // Ainda válido → soma a partir da expiração
-                    $expiracao = $expiracaoAtual->addDays($intervaloDias);
+                    // ⚠️ IMPORTANTE:
+                    // Usamos ->copy() para não mutar $expiracaoAtual em memória,
+                    // evitando adicionar dias "a mais" quando o mesmo objeto é reaproveitado.
+                    $expiracao = $expiracaoAtual->copy()->addDays($intervaloDias);
                 } else {
                     // Vencido → soma a partir de agora (data do pagamento)
                     $expiracao = now()->addDays($intervaloDias);
