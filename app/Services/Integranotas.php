@@ -57,6 +57,16 @@ class Integranotas
                 $itemServico->chave = $resp->chave;
                 $itemServico->save();
 
+                sleep(15); // Aguarda 15 segundos para consultar a NFse, pois o processamento pode levar alguns segundos
+                $payload = ["chave" => $itemServico->chave];
+                $resp = $nfse->consulta($payload);
+
+                if ($resp->codigo != 5023) {
+                    if ($resp->sucesso) {
+                        // Mandar email para o cliente com a NFSe ou atualizar o status no sistema
+                    } else Log::channel('nfse')->info('[NFSE] ' . json_encode($resp));
+                } Log::channel('nfse')->info('[NFSE] ' . json_encode($resp));
+
                 return [
                     'success' => true,
                     'error' => null,
@@ -65,10 +75,10 @@ class Integranotas
                 // Aqui o retorno indica que houve um erro na validação dos dados enviados
                 // O código 5001 indica que falto campos obrigatórios ou opcionais obrigatórios referente ao emitente.
                 // O código 5002 indica que houve um erro na validação dos dados como CNPJ, CPF, Inscrição Estadual, etc.
-                Log::channel('requests')->info('[NFSE] ' . json_encode($resp->erros));
-            } else Log::channel('requests')->info('[NFSE] Certificado digital não informado ou erro inesperado.'); // Aqui é retornado qualquer erro que não seja relacionado a validação dos dados como não foi informado certificado digital, entre outros.
+                Log::channel('nfse')->info('[NFSE] ' . json_encode($resp->erros));
+            } else Log::channel('nfse')->info('[NFSE] Certificado digital não informado ou erro inesperado.'); // Aqui é retornado qualquer erro que não seja relacionado a validação dos dados como não foi informado certificado digital, entre outros.
         } catch (\Exception $e) {
-            Log::channel('requests')->info('[NFSE] Erro ao emitir NFS-e: ' . $e->getMessage());
+            Log::channel('nfse')->info('[NFSE] Erro ao emitir NFS-e: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
