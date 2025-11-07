@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Empresa;
 use App\Models\ItemNotaServico;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use CloudDfe\SdkPHP\Nfse;
 
@@ -16,12 +15,23 @@ class Integranotas
     public static function createNFSe(array $dados)
     {
         try {
-            $emitente    = Empresa::find(14);
-            $configSDK  = self::getConfig();
-            $nfse       = new Nfse($configSDK);
-            $tomador    = self::getTomador($dados['customer_code']);
-            $itemServico    = self::getItemServico($dados['plan_code']);
-            $numero     = $emitente->numero_ultima_nfse + 1;
+            $emitente           = Empresa::find(14);
+            $configSDK          = self::getConfig();
+            $nfse               = new Nfse($configSDK);
+            $tomador            = self::getTomador($dados['customer_code']);
+            $numero             = $emitente->numero_ultima_nfse + 1;
+            $ultimoItemServico  = ItemNotaServico::where('servico_id', $dados['plan_code'])->orderBy('id', 'desc')->first();
+            $itemServico        = null;
+
+            if ($ultimoItemServico) {
+                $dadosNovoItemServico = $ultimoItemServico->toArray();
+
+                unset($dadosNovoItemServico['id']);
+                unset($dadosNovoItemServico['created_at']);
+                unset($dadosNovoItemServico['updated_at']);
+
+                $itemServico = ItemNotaServico::create($dadosNovoItemServico);
+            }
 
             $payload = [
                 "numero" => $numero,
@@ -32,9 +42,7 @@ class Integranotas
                 "tomador" => $tomador,
                 "servico" => [
                     "codigo_municipio" => $emitente->cidade->codigo,
-                    "itens" => [
-                        $itemServico
-                    ]
+                    "itens" => [self::getItemServico($itemServico)]
                 ]
             ];
 
@@ -46,27 +54,8 @@ class Integranotas
 
                 // Salva a chave no banco de dados para receber depois o resultado se a nota foi autorizada ou rejeitada
                 // OBS: A chave é o identificador para consultas futuras da NFSe
-                $chave = $resp->chave;
-
-                /* Este é um exemplo de como consultar a NFse após o envio se caso você não poder usar o Webhook. 
-                AVISO: RECOMENDAMOS UTILIZAR O WEBHOOK POIS ALGUMAS PREFEITURAS PODEM DEMORAR PARA PROCESSAR A NFSE.
-
-                sleep(15); // Aguarda 15 segundos para consultar a NFse, pois o processamento pode levar alguns segundos
-                
-                $payload = [
-                    "chave" => $chave
-                ];
-            
-                $resp = $nfse->consulta($payload);
-
-                if ($resp->codigo != 5023) {
-                    if ($resp->sucesso) {
-                        var_dump($resp);
-                    } else {
-                        var_dump($resp);
-                    }
-                }
-                */
+                $itemServico->chave = $resp->chave;
+                $itemServico->save();
 
                 return [
                     'success' => true,
@@ -128,9 +117,8 @@ class Integranotas
         ];
     }
 
-    private static function getItemServico($planoId)
+    private static function getItemServico($itemServico)
     {
-        $itemServico = ItemNotaServico::where('servico_id', $planoId)->orderBy('id', 'desc')->first();
         return [
             "codigo"                        => $itemServico->codigo_servico,
             "codigo_tributacao_municipio"   => $itemServico->codigo_tributacao_municipio,
