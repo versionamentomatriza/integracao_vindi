@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Empresa;
-use App\Models\Servico;
+use App\Models\ItemNotaServico;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use CloudDfe\SdkPHP\Nfse;
@@ -20,7 +20,7 @@ class Integranotas
             $configSDK  = self::getConfig();
             $nfse       = new Nfse($configSDK);
             $tomador    = self::getTomador($dados['customer_code']);
-            $servico    = self::getServico($dados['plan_code']);
+            $itemServico    = self::getItemServico($dados['plan_code']);
             $numero     = $emitente->numero_ultima_nfse + 1;
 
             $payload = [
@@ -33,7 +33,7 @@ class Integranotas
                 "servico" => [
                     "codigo_municipio" => $emitente->cidade->codigo,
                     "itens" => [
-                        $servico
+                        $itemServico
                     ]
                 ]
             ];
@@ -128,17 +128,17 @@ class Integranotas
         ];
     }
 
-    private static function getServico($planoId)
+    private static function getItemServico($planoId)
     {
-        $servico = Servico::find($planoId);
+        $itemServico = ItemNotaServico::where('servico_id', $planoId)->first();
         return [
             "codigo" => "",
             "codigo_tributacao_municipio" => "",
-            "discriminacao" => "",
-            "valor_servicos" => $servico->valor,
-            "valor_pis" => $servico->aliquota_pis,
-            "valor_cofins" => $servico->aliquota_cofins,
-            "valor_inss" =>  $servico->aliquota_inss,
+            "discriminacao" => $itemServico->discriminacao,
+            "valor_servicos" => $itemServico->valor_servico,
+            "valor_pis" => $itemServico->aliquota_pis,
+            "valor_cofins" => $itemServico->aliquota_cofins,
+            "valor_inss" =>  $itemServico->aliquota_inss,
             "valor_ir" => "",
             "valor_csll" => "",
             "valor_outras" => "",
