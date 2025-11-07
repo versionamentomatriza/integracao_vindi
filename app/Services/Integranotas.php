@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Empresa;
+use App\Models\Servico;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use CloudDfe\SdkPHP\Nfse;
@@ -15,22 +16,70 @@ class Integranotas
     public static function createNFSe(array $dados)
     {
         try {
+            $emitente    = Empresa::find(14);
             $configSDK  = self::getConfig();
             $nfse       = new Nfse($configSDK);
             $tomador    = self::getTomador($dados['customer_code']);
             $servico    = self::getServico($dados['plan_code']);
+            $numero     = $emitente->numero_ultima_nfse + 1;
 
             $payload = [
-                "numero" => "",
-                "serie" => "",
-                "tipo" => "",
-                "status" => "",
-                "data_emissao" => "",
+                "numero" => $numero,
+                "serie" => $emitente->numero_serie_nfse,
+                "tipo" => "1",
+                "status" => "1",
+                "data_emissao" => date("Y-m-d\TH:i:sP"),
                 "tomador" => $tomador,
-                "servico" => $servico
+                "servico" => [
+                    "codigo_municipio" => $emitente->cidade->codigo,
+                    "itens" => [
+                        $servico
+                    ]
+                ]
             ];
+
+            // Envia a NFSe para a API
+            $resp = $nfse->cria($payload);
+
+            if ($resp->sucesso) {
+                // Ao entrar nesse bloco significa que a NFSe foi para o provedor e aguarda processamento.
+
+                // Salva a chave no banco de dados para receber depois o resultado se a nota foi autorizada ou rejeitada
+                // OBS: A chave é o identificador para consultas futuras da NFSe
+                $chave = $resp->chave;
+
+                /* Este é um exemplo de como consultar a NFse após o envio se caso você não poder usar o Webhook. 
+                AVISO: RECOMENDAMOS UTILIZAR O WEBHOOK POIS ALGUMAS PREFEITURAS PODEM DEMORAR PARA PROCESSAR A NFSE.
+
+                sleep(15); // Aguarda 15 segundos para consultar a NFse, pois o processamento pode levar alguns segundos
+                
+                $payload = [
+                    "chave" => $chave
+                ];
+            
+                $resp = $nfse->consulta($payload);
+
+                if ($resp->codigo != 5023) {
+                    if ($resp->sucesso) {
+                        var_dump($resp);
+                    } else {
+                        var_dump($resp);
+                    }
+                }
+                */
+
+                return [
+                    'success' => true,
+                    'error' => null,
+                ];
+            } else if (in_array($resp->codigo, [5001, 5002])) {
+                // Aqui o retorno indica que houve um erro na validação dos dados enviados
+                // O código 5001 indica que falto campos obrigatórios ou opcionais obrigatórios referente ao emitente.
+                // O código 5002 indica que houve um erro na validação dos dados como CNPJ, CPF, Inscrição Estadual, etc.
+                Log::channel('requests')->info('[NFSE] ' . json_encode($resp->erros));
+            } else Log::channel('requests')->info('[NFSE] Certificado digital não informado ou erro inesperado.'); // Aqui é retornado qualquer erro que não seja relacionado a validação dos dados como não foi informado certificado digital, entre outros.
         } catch (\Exception $e) {
-            Log::error('Erro ao emitir NFS-e: ' . $e->getMessage());
+            Log::channel('requests')->info('[NFSE] Erro ao emitir NFS-e: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -81,25 +130,20 @@ class Integranotas
 
     private static function getServico($planoId)
     {
-        $matriza = Empresa::find(14);
+        $servico = Servico::find($planoId);
         return [
-            "codigo_municipio" => $matriza->cidade->codigo,
-            "itens" => [
-                [
-                    "codigo" => "",
-                    "codigo_tributacao_municipio" => "",
-                    "discriminacao" => "",
-                    "valor_servicos" => "",
-                    "valor_pis" => "",
-                    "valor_cofins" => "",
-                    "valor_inss" => "",
-                    "valor_ir" => "",
-                    "valor_csll" => "",
-                    "valor_outras" => "",
-                    "valor_aliquota" => "",
-                    "valor_desconto_incondicionado" => ""
-                ]
-            ]
+            "codigo" => "",
+            "codigo_tributacao_municipio" => "",
+            "discriminacao" => "",
+            "valor_servicos" => $servico->valor,
+            "valor_pis" => $servico->aliquota_pis,
+            "valor_cofins" => $servico->aliquota_cofins,
+            "valor_inss" =>  $servico->aliquota_inss,
+            "valor_ir" => "",
+            "valor_csll" => "",
+            "valor_outras" => "",
+            "valor_aliquota" => "",
+            "valor_desconto_incondicionado" => ""
         ];
     }
 
