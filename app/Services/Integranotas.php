@@ -130,20 +130,20 @@ class Integranotas
 
     private static function getItemServico($planoId)
     {
-        $itemServico = ItemNotaServico::where('servico_id', $planoId)->first();
+        $itemServico = ItemNotaServico::where('servico_id', $planoId)->orderBy('id', 'desc')->first();
         return [
-            "codigo" => "",
-            "codigo_tributacao_municipio" => "",
-            "discriminacao" => $itemServico->discriminacao,
-            "valor_servicos" => $itemServico->valor_servico,
-            "valor_pis" => $itemServico->aliquota_pis,
-            "valor_cofins" => $itemServico->aliquota_cofins,
-            "valor_inss" =>  $itemServico->aliquota_inss,
-            "valor_ir" => "",
-            "valor_csll" => "",
-            "valor_outras" => "",
-            "valor_aliquota" => "",
-            "valor_desconto_incondicionado" => ""
+            "codigo"                        => $itemServico->codigo_servico,
+            "codigo_tributacao_municipio"   => $itemServico->codigo_tributacao_municipio,
+            "discriminacao"                 => $itemServico->discriminacao,
+            "valor_servicos"                => $itemServico->valor_servico,
+            "valor_pis"                     => $itemServico->aliquota_pis,
+            "valor_cofins"                  => $itemServico->aliquota_cofins,
+            "valor_inss"                    =>  $itemServico->aliquota_inss,
+            "valor_ir"                      => $itemServico->aliquota_ir,
+            "valor_csll"                    => $itemServico->aliquota_csll,
+            "valor_outras"                  => $itemServico->outras_retencoes,
+            "valor_aliquota"                => $itemServico->aliquota_iss,
+            "valor_desconto_incondicionado" => $itemServico->desconto_incondicional
         ];
     }
 
