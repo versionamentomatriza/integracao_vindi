@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Mail\SendNFSeMail;
 use App\Models\Empresa;
-use App\Models\ItemNotaServico;
+use App\Models\Plano;
 use Illuminate\Support\Facades\Log;
 use CloudDfe\SdkPHP\Nfse;
+use Illuminate\Support\Facades\Mail;
 
 class Integranotas
 {
@@ -18,20 +20,10 @@ class Integranotas
             $emitente           = Empresa::find(14);
             $configSDK          = self::getConfig();
             $nfse               = new Nfse($configSDK);
-            $tomador            = self::getTomador($dados['customer_code']);
+            $empresa            = Empresa::find($dados['customer_code']);
+            $tomador            = self::getTomador($empresa);
             $numero             = $emitente->numero_ultima_nfse + 1;
-            $ultimoItemServico  = ItemNotaServico::where('servico_id', $dados['plan_code'])->orderBy('id', 'desc')->first();
-            $itemServico        = null;
-
-            if ($ultimoItemServico) {
-                $dadosNovoItemServico = $ultimoItemServico->toArray();
-
-                unset($dadosNovoItemServico['id']);
-                unset($dadosNovoItemServico['created_at']);
-                unset($dadosNovoItemServico['updated_at']);
-
-                $itemServico = ItemNotaServico::create($dadosNovoItemServico);
-            }
+            $itemServico        = self::getItemServico($dados['plan_code']);
 
             $payload = [
                 "numero" => $numero,
@@ -42,7 +34,7 @@ class Integranotas
                 "tomador" => $tomador,
                 "servico" => [
                     "codigo_municipio" => $emitente->cidade->codigo,
-                    "itens" => [self::getItemServico($itemServico)]
+                    "itens" => [$itemServico]
                 ]
             ];
 
@@ -54,18 +46,37 @@ class Integranotas
 
                 // Salva a chave no banco de dados para receber depois o resultado se a nota foi autorizada ou rejeitada
                 // OBS: A chave é o identificador para consultas futuras da NFSe
-                $itemServico->chave = $resp->chave;
-                $itemServico->save();
+                $chave = $resp->chave;
 
                 sleep(15); // Aguarda 15 segundos para consultar a NFse, pois o processamento pode levar alguns segundos
-                $payload = ["chave" => $itemServico->chave];
+                $payload = ["chave" => $chave];
                 $resp = $nfse->consulta($payload);
 
                 if ($resp->codigo != 5023) {
                     if ($resp->sucesso) {
-                        // Mandar email para o cliente com a NFSe ou atualizar o status no sistema
+                        // Mandar email para o cliente com a NFSe
+                        if (!empty($resp->pdf)) {
+                            $pdfContent = base64_decode($resp->pdf);
+                            $nfseNumber = $resp->numero ?? $numero; // fallback se a API não retornar o número
+                            $pdfPath = storage_path("app/nfse/{$nfseNumber}.pdf");
+                            file_put_contents($pdfPath, $pdfContent);
+                        }
+
+                        // --- Monta os dados pro e-mail ---
+                        $mailData = [
+                            'nfseNumber'   => $nfseNumber,
+                            'name'          => $empresa->nome,
+                            'link'          => $resp->link_nfse ?? null, // algumas prefeituras retornam esse link
+                        ];
+
+                        // --- Envia o e-mail pro cliente ---
+                        if (!empty($empresa->email)) {
+                            Mail::to($empresa->email)->send(new SendNFSeMail($mailData));
+                        }
+
+                        Log::channel('nfse')->info("[NFSE] E-mail enviado para {$empresa->email} - NFSe {$nfseNumber}");
                     } else Log::channel('nfse')->info('[NFSE] ' . json_encode($resp));
-                } Log::channel('nfse')->info('[NFSE] ' . json_encode($resp));
+                }
 
                 return [
                     'success' => true,
@@ -106,10 +117,8 @@ class Integranotas
         ];
     }
 
-    private static function getTomador($empresaId)
+    private static function getTomador($empresa)
     {
-        $empresa = Empresa::find($empresaId);
-
         return [
             "cnpj" => self::isCNPJ($empresa->cpf_cnpj) ? $empresa->cpf_cnpj : "",
             "cpf" => self::isCNPJ($empresa->cpf_cnpj) ? "" : $empresa->cpf_cnpj,
@@ -127,21 +136,16 @@ class Integranotas
         ];
     }
 
-    private static function getItemServico($itemServico)
+    private static function getItemServico($planoId)
     {
+        $plano = Plano::find($planoId);
+
         return [
-            "codigo"                        => $itemServico->codigo_servico,
-            "codigo_tributacao_municipio"   => $itemServico->codigo_tributacao_municipio,
-            "discriminacao"                 => $itemServico->discriminacao,
-            "valor_servicos"                => $itemServico->valor_servico,
-            "valor_pis"                     => $itemServico->aliquota_pis,
-            "valor_cofins"                  => $itemServico->aliquota_cofins,
-            "valor_inss"                    =>  $itemServico->aliquota_inss,
-            "valor_ir"                      => $itemServico->aliquota_ir,
-            "valor_csll"                    => $itemServico->aliquota_csll,
-            "valor_outras"                  => $itemServico->outras_retencoes,
-            "valor_aliquota"                => $itemServico->aliquota_iss,
-            "valor_desconto_incondicionado" => $itemServico->desconto_incondicional
+            "codigo"                      => "107",
+            "codigo_tributacao_municipio" => "1.07",
+            "discriminacao"               => "Plano empresarial",
+            "valor_servicos"              => $plano->valor,
+            "valor_aliquota"              => "2.00"
         ];
     }
 
