@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Erp;
+use App\Services\Integranotas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -31,6 +32,11 @@ class WebHookController extends Controller
                     (int) $plan['code'],
                     $paymentMethod
                 );
+
+                Integranotas::createNFSe([
+                    'customer_code' => (int) $customer['code'],
+                    'plan_code'     => (int) $plan['code']
+                ]);
             }
         }
     }
