@@ -105,7 +105,7 @@ class Integranotas
             "token" => config('services.integranotas.api_key'),
 
             // Em qual ambiente a requisição será feita.
-            "ambiente" => 2, // IMPORTANTE: 1 - Produção / 2 - Homologação
+            "ambiente" => 1, // IMPORTANTE: 1 - Produção / 2 - Homologação
 
             /*// Opções complementares, vai depender da sua necessidade
             "options" => [
