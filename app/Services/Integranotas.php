@@ -74,9 +74,8 @@ class Integranotas
                         // --- Envia o e-mail pro cliente ---
                         if (!empty($empresa->email)) {
                             Mail::to($empresa->email)->queue(new SendNFSeMail($mailData));
-                        }
-
-                        Log::channel('nfse')->info("[NFSE] E-mail enviado para {$empresa->email} - NFSe {$nfseNumber}");
+                            Log::channel('nfse')->info("[NFSE] E-mail enviado para {$empresa->email} - NFSe {$nfseNumber}");
+                        } else Log::channel('nfse')->info("[NFSE] E-mail não enviado pois a empresa não possui e-mail cadastrado - NFSe {$nfseNumber}");
                     } else Log::channel('nfse')->info('[NFSE] ' . json_encode($resp));
                 }
 
