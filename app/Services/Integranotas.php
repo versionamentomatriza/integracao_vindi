@@ -26,11 +26,13 @@ class Integranotas
             $itemServico        = self::getItemServico($dados['plan_code']);
 
             $payload = [
+                "modelo" => "municipal",
                 "numero" => $numero,
                 "serie" => $emitente->numero_serie_nfse,
                 "tipo" => "1",
                 "status" => "1",
                 "data_emissao" => date("Y-m-d\TH:i:sP"),
+                "data_competencia" => date("Y-m-d\TH:i:sP"),
                 "tomador" => $tomador,
                 "servico" => [
                     "codigo_municipio" => $emitente->cidade->codigo,
@@ -64,14 +66,14 @@ class Integranotas
 
                         // --- Monta os dados pro e-mail ---
                         $mailData = [
-                            'nfseNumber'   => $nfseNumber,
-                            'name'          => $empresa->nome,
-                            'link'          => $resp->link_nfse ?? null, // algumas prefeituras retornam esse link
+                            'number'    => $nfseNumber,
+                            'name'      => $empresa->nome,
+                            'link'      => $resp->link_nfse ?? null, // algumas prefeituras retornam esse link
                         ];
 
                         // --- Envia o e-mail pro cliente ---
                         if (!empty($empresa->email)) {
-                            Mail::to($empresa->email)->send(new SendNFSeMail($mailData));
+                            Mail::to($empresa->email)->queue(new SendNFSeMail($mailData));
                         }
 
                         Log::channel('nfse')->info("[NFSE] E-mail enviado para {$empresa->email} - NFSe {$nfseNumber}");
@@ -105,7 +107,7 @@ class Integranotas
             "token" => config('services.integranotas.api_key'),
 
             // Em qual ambiente a requisição será feita.
-            "ambiente" => 1, // IMPORTANTE: 1 - Produção / 2 - Homologação
+            "ambiente" => Nfse::AMBIENTE_PRODUCAO, // IMPORTANTE: 1 - Produção / 2 - Homologação
 
             /*// Opções complementares, vai depender da sua necessidade
             "options" => [
