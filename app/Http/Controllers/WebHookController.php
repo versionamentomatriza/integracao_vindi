@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FaturaVindiProcessada;
 use App\Services\Erp;
 use App\Services\Integranotas;
 use Illuminate\Http\Request;
@@ -19,7 +20,12 @@ class WebHookController extends Controller
         $event = $request->input('event') ?? null;
 
         if ($event && ($event['type'] ?? null) === 'bill_paid') {
-            $bill     = $event['data']['bill'] ?? null;
+            $bill = $event['data']['bill'] ?? null;
+
+            if ($bill && FaturaVindiProcessada::where('fatura_id', $bill['id'])->exists()) return response('Duplicate', 200);
+
+            FaturaVindiProcessada::create(['fatura_id' => $bill['id']]);
+
             $plan     = $bill['subscription']['plan'] ?? null;
             $customer = $bill['customer'] ?? null;
             $paymentMethod = $bill['charges'][0]['payment_method']['name']
