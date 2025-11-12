@@ -42,7 +42,7 @@ class SendNFSeMail extends Mailable
         return new Content(
             view: 'emails.nfse',
             with: [
-                'number'  => $this->data['nfseNumber'] ?? null,
+                'number'  => $this->data['number'] ?? null,
                 'name' => $this->data['name'] ?? null,
                 'link'    => $this->data['link'] ?? null,
             ]
