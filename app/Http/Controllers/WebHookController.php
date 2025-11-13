@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FaturaVindiProcessada;
 use App\Services\Erp;
-use App\Services\Integranotas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WebHookController extends Controller
@@ -39,9 +39,10 @@ class WebHookController extends Controller
                     $paymentMethod
                 );
 
-                Integranotas::createNFSe([
-                    'customer_code' => (int) $customer['code'],
-                    'plan_code'     => (int) $plan['code']
+                // Emitir NFS-e pelo ERP
+                Http::post(route('https://matriza.net/public/api/nfse/emitir_nota_vindi'), [
+                    'empresa_id' => $customer['code'],
+                    'plano_id' => $plan['code'],
                 ]);
             }
         }

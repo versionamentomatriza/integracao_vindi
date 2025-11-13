@@ -43,9 +43,4 @@ return [
         'base_url' => env('VINDI_API_URL'),
         'api_key' => env('VINDI_API_KEY'),
     ],
-
-    'integranotas' => [
-        'base_url' => env('INTEGRANOTAS_API_URL'),
-        'api_key' => env('INTEGRANOTAS_API_KEY'),
-    ],
 ];
